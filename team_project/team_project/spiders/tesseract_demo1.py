@@ -46,3 +46,16 @@ from PIL import Image
 # image.show()
 # result = pytesseract.image_to_string(image)
 # print(result)
+
+from scrapy_redis.spiders import RedisSpider
+
+
+class CharacterSpider(RedisSpider):
+    name = 'slide'
+    # start_urls = [
+    #     'https://www.qiushibaike.com/hot/page/1/'
+    # ]
+    redis_key = "slide:start_urls"
+
+    def parse(self, response):
+        pass
