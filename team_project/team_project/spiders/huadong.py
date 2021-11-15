@@ -225,7 +225,7 @@
 #             print('fail')
 #     except:
 #         print("failed")
-
+import scrapy
 from scrapy_redis.spiders import RedisSpider
 
 

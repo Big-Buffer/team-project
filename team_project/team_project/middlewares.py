@@ -168,6 +168,16 @@ class SeleniumForSlideMiddleware(object):
         btn.click()
         time.sleep(10)
 
+    def write(self, username, password):
+        wait = WebDriverWait(self.chrome, 5, 0.5)
+        user_input = wait.until(EC.presence_of_element_located(
+            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][1]/div/div/input')))  # 根据具体情况改
+        pwd_input = wait.until(EC.presence_of_element_located(
+            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][2]/div/div/input')))  # 根据具体情况改
+        user_input.send_keys(username)
+        pwd_input.send_keys(password)
+        time.sleep(1)
+
     # 获取滑动验证图片位置
     def get_position(self, img_label):
         location = img_label.location
@@ -342,117 +352,64 @@ class SeleniumForSlideMiddleware(object):
 
     # request the website
     def process_request(self, request, spider):
-        self.chrome.get(request.url)
-        self.click('admin', 'admin')
-        time.sleep(2)
-        self.run()
-        time.sleep(1)
-        windows = self.chrome.window_handles
-        self.chrome.switch_to.window(windows[-1])
-        try:
-            success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
-            if success.text == "登录成功":
-                print('success')
-            else:
-                print('fail')
-        except:
-            print('error')
-        html = self.chrome.page_source
-        return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
+        if spider.name == 'slide':
+            self.chrome.get(request.url)
+            self.click('admin', 'admin')
+            time.sleep(2)
+            self.run()
+            time.sleep(1)
+            windows = self.chrome.window_handles
+            self.chrome.switch_to.window(windows[-1])
+            try:
+                success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
+                if success.text == "登录成功":
+                    print('success')
+                else:
+                    print('fail')
+            except:
+                print('error')
+            html = self.chrome.page_source
+            return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
-
-class CharacterMiddleware(object):
-    @classmethod
-    def from_crawler(cls, crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_closed)
-        return s
-
-    def spider_opened(self, spider):
-        # when the spider created
-        self.chrome = webdriver.Chrome()
-
-    def spider_closed(self, spider):
-        self.chrome.quit()
-
-    def write(self, username, password):
-        wait = WebDriverWait(self.chrome, 5, 0.5)
-        user_input = wait.until(EC.presence_of_element_located(
-            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][1]/div/div/input')))  # 根据具体情况改
-        pwd_input = wait.until(EC.presence_of_element_located(
-            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][2]/div/div/input')))  # 根据具体情况改
-        user_input.send_keys(username)
-        pwd_input.send_keys(password)
-        time.sleep(1)
-
-    def get_position(self, img_label):
-        location = img_label.location
-        size = img_label.size
-        top, bottom, left, right = location['y'], location['y'] + size['height'], location['x'], location['x'] + size[
-            'width']
-        return (left, top, right, bottom)
-
-    def get_screenshot(self):
-        screenshot = self.chrome.get_screenshot_as_png()
-        f = BytesIO()
-        f.write(screenshot)
-        return Image.open(f)
-
-    # 对比上两张图算位置
-    def get_position_scale(self, screen_shot):
-        height = self.chrome.execute_script('return document.documentElement.clientHeight')
-        width = self.chrome.execute_script('return document.documentElement.clientWidth')
-        x_scale = screen_shot.size[0] / (width + 10)
-        y_scale = screen_shot.size[1] / (height)
-        return (x_scale, y_scale)
-
-    # 获取有缺口的滑动图片
-    def get_slideimg_screenshot(self, screenshot, position, scale):
-        x_scale, y_scale = scale
-        position = [position[0] * x_scale, position[1] * y_scale, position[2] * x_scale, position[3] * y_scale]
-        return screenshot.crop(position)
-
-    def process_request(self, request, spider):
-        self.chrome.get(request.url)
-        self.write('admin', 'admin')
-        time.sleep(2)
-        code_input = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
-            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][3]/div/div/div/div/input')))  # 根据具体情况改
-        code_img = EC.presence_of_element_located(
-            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][3]/div/div/div[2]/div/canvas'))
-        position = self.get_position(code_img)  # 获取滑动验证图片位置
-        screenshot = self.get_screenshot()  # 获取浏览器截图
-        position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
-        code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale)
-        # 灰度处理
-        im = code_img_final.convert('L')
-        # 设置二值化的阈值
-        threshold = 170
-        t = []
-        for i in range(256):
-            if i < threshold:
-                t.append(0)
-            else:
-                t.append(1)
-        # 通过表格转换成二进制图片，1的作用是白色，0就是黑色
-        im = im.point(t, "1")
-        code = pytesseract.image_to_string(im)
-        code_input.send_keys(code)
-        time.sleep(1)
-        btn = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
-            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][4]/div/button')))  # 根据具体情况改
-        btn.click()
-        windows = self.chrome.window_handles
-        self.chrome.switch_to.window(windows[-1])
-        try:
-            success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
-            if success.text == "登录成功":
-                print('success')
-            else:
-                print('fail')
-        except:
-            print('error')
-        html = self.chrome.page_source
-        return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
+        elif spider.name == 'character':
+            self.chrome.get(request.url)
+            self.write('admin', 'admin')
+            time.sleep(2)
+            code_input = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
+                (By.XPATH,
+                 '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][3]/div/div/div/div/input')))  # 根据具体情况改
+            code_img = self.chrome.find_element(By.ID, 'captcha')
+            position = self.get_position(code_img)  # 获取验证图片位置
+            screenshot = self.get_screenshot()  # 获取浏览器截图
+            position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
+            code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale) # 得到验证码图片
+            # 灰度处理
+            im = code_img_final.convert('L')
+            # 设置二值化的阈值
+            threshold = 170
+            t = []
+            for i in range(256):
+                if i < threshold:
+                    t.append(0)
+                else:
+                    t.append(1)
+            # 通过表格转换成二进制图片，1的作用是白色，0就是黑色
+            im = im.point(t, "1")
+            code = pytesseract.image_to_string(im)
+            code_input.send_keys(code)
+            time.sleep(1)
+            btn = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
+                (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][4]/div/button')))  # 根据具体情况改
+            btn.click()
+            windows = self.chrome.window_handles
+            self.chrome.switch_to.window(windows[-1])
+            try:
+                success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
+                if success.text == "登录成功":
+                    print('success')
+                else:
+                    print('fail')
+            except:
+                print('error')
+            html = self.chrome.page_source
+            return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
