@@ -232,7 +232,7 @@ from scrapy_redis.spiders import RedisSpider
 class SlideSpider(RedisSpider):
     name = 'slide'
     # start_urls = [
-    #     'https://www.qiushibaike.com/hot/page/1/'
+    #     'https://captcha1.scrape.center/'
     # ]
     redis_key = "slide:start_urls"
 

@@ -53,7 +53,7 @@ from scrapy_redis.spiders import RedisSpider
 class CharacterSpider(RedisSpider):
     name = 'character'
     # start_urls = [
-    #     'https://www.qiushibaike.com/hot/page/1/'
+    #     'https://captcha7.scrape.center/'
     # ]
     redis_key = "character:start_urls"
 

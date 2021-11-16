@@ -352,7 +352,8 @@ class SeleniumForSlideMiddleware(object):
 
     # request the website
     def process_request(self, request, spider):
-        if spider.name == 'slide':
+        # 通过请求连接中包含的域名来分类，看通过哪种验证码破解方式
+        if 'captcha1.scrape.center' in request.url:  # 通过spider的名字：spider.name == 'slide':
             self.chrome.get(request.url)
             self.click('admin', 'admin')
             time.sleep(2)
@@ -371,7 +372,7 @@ class SeleniumForSlideMiddleware(object):
             html = self.chrome.page_source
             return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
-        elif spider.name == 'character':
+        elif 'captcha7.scrape.center' in request.url:  # spider.name == 'character':
             self.chrome.get(request.url)
             self.write('admin', 'admin')
             time.sleep(2)
@@ -382,7 +383,7 @@ class SeleniumForSlideMiddleware(object):
             position = self.get_position(code_img)  # 获取验证图片位置
             screenshot = self.get_screenshot()  # 获取浏览器截图
             position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
-            code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale) # 得到验证码图片
+            code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale)  # 得到验证码图片
             # 灰度处理
             im = code_img_final.convert('L')
             # 设置二值化的阈值
