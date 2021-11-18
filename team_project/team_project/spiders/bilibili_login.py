@@ -1,3 +1,12 @@
+# _*_ coding: utf-8 _*_
+"""
+Time:     ${DATE} ${TIME}
+Author:   Fuyuxia
+Version:  V 0.1
+File:     ${NAME}.py
+
+"""
+
 from io import BytesIO
 from PIL import Image
 import time
@@ -10,10 +19,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from chaojiying import Chaojiying
 
 #输入你的B站、超级鹰用户名和密码
-EMAIL='email'
-PASSWORD = 'passwd'
-CHAOJIYING_USERNAME = 'usrname'
-CHAOJIYING_PASSWORD = 'email'
+pic_id =''
+EMAIL='your email'
+PASSWORD = 'your passwd'
+CHAOJIYING_USERNAME = 'your chaojiying username'
+CHAOJIYING_PASSWORD = 'your chaojiying passwd'
 CHAOJIYING_SOFT_ID = 924124
 CHAOJIYING_KIND = 9004 #返回1到4个坐标
 #封装函数
@@ -40,30 +50,42 @@ class CrackTouClick():
         return button
 
     def pick_code(self):
-        time.sleep(3)
-        pick_img_label = self.browser.find_element_by_css_selector('img.geetest_item_img')  # 获取点触图片标签
-        src = pick_img_label.get_attribute('src')  # 获取点触图片链接
-        img_content = requests.get(src).content  # 获取图片二进制内容
-        f = BytesIO()
-        f.write(img_content)
-        img0 = Image.open(f)
-        scale = [pick_img_label.size['width'] / img0.size[0],
+        global pic_id
+        time.sleep(5)
+        ele = self.browser.find_elements_by_css_selector('img.geetest_item_img')
+        if (len(ele)==1):
+            pick_img_label = self.browser.find_element_by_css_selector('img.geetest_item_img')  # 获取点触图片标签
+            src = pick_img_label.get_attribute('src')  # 获取点触图片链接
+            img_content = requests.get(src).content  # 获取图片二进制内容
+            f = BytesIO()
+            f.write(img_content)
+            img0 = Image.open(f)
+            scale = [pick_img_label.size['width'] / img0.size[0],
                  pick_img_label.size['height'] / img0.size[1]]  # 获取图片与浏览器该标签大小的比例
-        cjy = Chaojiying(CHAOJIYING_USERNAME, CHAOJIYING_PASSWORD, CHAOJIYING_SOFT_ID)
-        result = cjy.post_pic(img_content, '9005')  # 发送图片并获取结果
-        if result['err_no'] == 0:
-            position = result['pic_str'].split('|')
-            position = [[int(j) for j in i.split(',')] for i in position]
-            for items in position:  # 模拟点击
-                ActionChains(self.browser).move_to_element_with_offset(pick_img_label, items[0] * scale[0], items[1] * scale[1]).click().perform()
-                time.sleep(1)
+            cjy = Chaojiying(CHAOJIYING_USERNAME, CHAOJIYING_PASSWORD, CHAOJIYING_SOFT_ID)
+            result = cjy.post_pic(img_content, '9005')  # 发送图片并获取结果
+            if result['err_no'] == 0:
+                position = result['pic_str'].split('|')
+                position = [[int(j) for j in i.split(',')] for i in position]
+                for items in position:  # 模拟点击
+                    ActionChains(self.browser).move_to_element_with_offset(pick_img_label, items[0] * scale[0], items[1] * scale[1]).click().perform()
+                    time.sleep(1)
             time.sleep(2)
             # 点击登录
             certern_btn = self.browser.find_element_by_css_selector('div.geetest_commit_tip')
             time.sleep(1)
             certern_btn.click()
-            pic_id = result['pic_id']
-        return pic_id
+    #检测是否登陆成功
+
+    def detect(self):
+        current=self.browser.current_url
+        if (current == 'https://passport.bilibili.com/account/security#/home'or current =='https://www.bilibili.com/'):
+            print('登陆成功')
+        else:
+            self.chaojiying.report_error(pic_id)
+            self.pick_code()
+            self.detect()
+
     def crack(self):
         self.open()
         # 点击验证按钮
@@ -71,12 +93,11 @@ class CrackTouClick():
         button = self.get_touclick_button()
         button.click()
         self.pick_code()
-        pic_id=self.pick_code()
-        if (self.browser.current_url == 'https://www.bilibili.com/'):
-            print('登陆成功')
-        else:
-            self.chaojiying.report_error(pic_id)
-            self.pick_code()
+        time.sleep(3)
+        self.detect()
+
+
+
 
 
 if __name__ == '__main__':
