@@ -4,6 +4,7 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 import random
 import time
+from urllib.parse import urlparse
 
 import pytesseract
 import requests
@@ -17,7 +18,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from scrapy.http import HtmlResponse
+from .mongo_db import MongoDB
+from .chaojiying import Chaojiying
 
+pic_id = ''
 
 class TeamProjectSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
@@ -138,6 +142,11 @@ class RandomProxyMiddleware(object):
 
 
 class SeleniumForSlideMiddleware(object):
+
+    def __init__(self):
+        self.mongodb = MongoDB()
+        self.chaojiying = Chaojiying('shenmegui1987', '1565244084', '924600')
+
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
@@ -350,10 +359,51 @@ class SeleniumForSlideMiddleware(object):
         track = self.get_track(left)  # 计算滑动轨迹
         self.move_to_gap(slide_btn, track)  # 移动
 
+    def pick_code(self):
+        global pic_id
+        time.sleep(5)
+        ele = self.chrome.find_elements(By.CSS_SELECTOR, 'img.geetest_item_img')
+        if len(ele) == 1:
+            pick_img_label = self.chrome.find_element(By.CSS_SELECTOR, 'img.geetest_item_img')  # 获取点触图片标签
+            src = pick_img_label.get_attribute('src')  # 获取点触图片链接
+            img_content = requests.get(src).content  # 获取图片二进制内容
+            f = BytesIO()
+            f.write(img_content)
+            img0 = Image.open(f)
+            scale = [pick_img_label.size['width'] / img0.size[0],
+                     pick_img_label.size['height'] / img0.size[1]]  # 获取图片与浏览器该标签大小的比例
+            cjy = self.chaojiying
+            result = cjy.PostPic(img_content, '9005')  # 发送图片并获取结果
+            if result['err_no'] == 0:
+                position = result['pic_str'].split('|')
+                position = [[int(j) for j in i.split(',')] for i in position]
+                for items in position:  # 模拟点击
+                    webdriver.ActionChains(self.chrome).move_to_element_with_offset(pick_img_label, items[0] * scale[0],
+                                                                                    items[1] * scale[
+                                                                                        1]).click().perform()
+                    time.sleep(1)
+            # 点击登录
+            certern_btn = self.chrome.find_element(By.CSS_SELECTOR, 'div.geetest_commit_tip')
+            time.sleep(1)
+            certern_btn.click()
+
+    # 检测是否登陆成功
+
+    def detect(self):
+        current = self.chrome.current_url
+        if current == 'https://captcha3.scrape.center/success':
+            print('登陆成功')
+        else:
+            self.chaojiying.ReportError(pic_id)
+            self.pick_code()
+            self.detect()
+
     # request the website
     def process_request(self, request, spider):
         # 通过请求连接中包含的域名来分类，看通过哪种验证码破解方式
-        if 'captcha1.scrape.center' in request.url:  # 通过spider的名字：spider.name == 'slide':
+        # 滑动验证 如：https://captcha1.scrape.center/
+        if urlparse(request.url).netloc in self.mongodb.get_all_by_condition(
+                'slide'):  # 通过spider的名字：spider.name == 'slide':
             self.chrome.get(request.url)
             self.click('admin', 'admin')
             time.sleep(2)
@@ -372,7 +422,8 @@ class SeleniumForSlideMiddleware(object):
             html = self.chrome.page_source
             return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
-        elif 'captcha7.scrape.center' in request.url:  # spider.name == 'character':
+        # 图像验证 如：https://captcha7.scrape.center/
+        elif urlparse(request.url).netloc in self.mongodb.get_all_by_condition('image'):  # spider.name == 'image':
             self.chrome.get(request.url)
             self.write('admin', 'admin')
             time.sleep(2)
@@ -414,3 +465,13 @@ class SeleniumForSlideMiddleware(object):
                 print('error')
             html = self.chrome.page_source
             return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
+
+        # 语序验证 如：https://captcha3.scrape.center/
+        elif urlparse(request.url).netloc in self.mongodb.get_all_by_condition(
+                'word_order'):  # spider.name == 'word_order'
+            self.chrome.get(request.url)
+            self.click('admin', 'admin')
+            self.pick_code()
+            time.sleep(3)
+            self.detect()
+            return HtmlResponse(url=self.chrome.current_url)
