@@ -141,7 +141,7 @@ class RandomProxyMiddleware(object):
                 print(str(ip))
 
 
-class SeleniumForSlideMiddleware(object):
+class SeleniumMiddleware(object):
 
     def __init__(self):
         self.mongodb = MongoDB()
@@ -400,78 +400,79 @@ class SeleniumForSlideMiddleware(object):
 
     # request the website
     def process_request(self, request, spider):
-        # 通过请求连接中包含的域名来分类，看通过哪种验证码破解方式
-        # 滑动验证 如：https://captcha1.scrape.center/
-        if urlparse(request.url).netloc in self.mongodb.get_all_by_condition(
-                'slide'):  # 通过spider的名字：spider.name == 'slide':
-            self.chrome.get(request.url)
-            self.click('admin', 'admin')
-            time.sleep(2)
-            self.run()
-            time.sleep(1)
-            windows = self.chrome.window_handles
-            self.chrome.switch_to.window(windows[-1])
-            try:
-                success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
-                if success.text == "登录成功":
-                    print('success')
-                else:
-                    print('fail')
-            except:
-                print('error')
-            html = self.chrome.page_source
-            return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
+        if 'login' in request.url:
+            # 通过请求连接中包含的域名来分类，看通过哪种验证码破解方式
+            # 滑动验证 如：https://captcha1.scrape.center/
+            if urlparse(request.url).netloc in self.mongodb.get_all_by_condition(
+                    'slide'):  # 通过spider的名字：spider.name == 'slide':
+                self.chrome.get(request.url)
+                self.click('admin', 'admin')
+                time.sleep(2)
+                self.run()
+                time.sleep(1)
+                windows = self.chrome.window_handles
+                self.chrome.switch_to.window(windows[-1])
+                try:
+                    success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
+                    if success.text == "登录成功":
+                        print('success')
+                    else:
+                        print('fail')
+                except:
+                    print('error')
+                html = self.chrome.page_source
+                return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
-        # 图像验证 如：https://captcha7.scrape.center/
-        elif urlparse(request.url).netloc in self.mongodb.get_all_by_condition('image'):  # spider.name == 'image':
-            self.chrome.get(request.url)
-            self.write('admin', 'admin')
-            time.sleep(2)
-            code_input = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
-                (By.XPATH,
-                 '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][3]/div/div/div/div/input')))  # 根据具体情况改
-            code_img = self.chrome.find_element(By.ID, 'captcha')
-            position = self.get_position(code_img)  # 获取验证图片位置
-            screenshot = self.get_screenshot()  # 获取浏览器截图
-            position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
-            code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale)  # 得到验证码图片
-            # 灰度处理
-            im = code_img_final.convert('L')
-            # 设置二值化的阈值
-            threshold = 170
-            t = []
-            for i in range(256):
-                if i < threshold:
-                    t.append(0)
-                else:
-                    t.append(1)
-            # 通过表格转换成二进制图片，1的作用是白色，0就是黑色
-            im = im.point(t, "1")
-            code = pytesseract.image_to_string(im)
-            code_input.send_keys(code)
-            time.sleep(1)
-            btn = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
-                (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][4]/div/button')))  # 根据具体情况改
-            btn.click()
-            windows = self.chrome.window_handles
-            self.chrome.switch_to.window(windows[-1])
-            try:
-                success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
-                if success.text == "登录成功":
-                    print('success')
-                else:
-                    print('fail')
-            except:
-                print('error')
-            html = self.chrome.page_source
-            return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
+            # 图像验证 如：https://captcha7.scrape.center/
+            elif urlparse(request.url).netloc in self.mongodb.get_all_by_condition('image'):  # spider.name == 'image':
+                self.chrome.get(request.url)
+                self.write('admin', 'admin')
+                time.sleep(2)
+                code_input = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
+                    (By.XPATH,
+                     '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][3]/div/div/div/div/input')))  # 根据具体情况改
+                code_img = self.chrome.find_element(By.ID, 'captcha')
+                position = self.get_position(code_img)  # 获取验证图片位置
+                screenshot = self.get_screenshot()  # 获取浏览器截图
+                position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
+                code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale)  # 得到验证码图片
+                # 灰度处理
+                im = code_img_final.convert('L')
+                # 设置二值化的阈值
+                threshold = 170
+                t = []
+                for i in range(256):
+                    if i < threshold:
+                        t.append(0)
+                    else:
+                        t.append(1)
+                # 通过表格转换成二进制图片，1的作用是白色，0就是黑色
+                im = im.point(t, "1")
+                code = pytesseract.image_to_string(im)
+                code_input.send_keys(code)
+                time.sleep(1)
+                btn = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
+                    (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][4]/div/button')))  # 根据具体情况改
+                btn.click()
+                windows = self.chrome.window_handles
+                self.chrome.switch_to.window(windows[-1])
+                try:
+                    success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
+                    if success.text == "登录成功":
+                        print('success')
+                    else:
+                        print('fail')
+                except:
+                    print('error')
+                html = self.chrome.page_source
+                return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
-        # 语序验证 如：https://captcha3.scrape.center/
-        elif urlparse(request.url).netloc in self.mongodb.get_all_by_condition(
-                'word_order'):  # spider.name == 'word_order'
-            self.chrome.get(request.url)
-            self.click('admin', 'admin')
-            self.pick_code()
-            time.sleep(3)
-            self.detect()
-            return HtmlResponse(url=self.chrome.current_url)
+            # 语序验证 如：https://captcha3.scrape.center/
+            elif urlparse(request.url).netloc in self.mongodb.get_all_by_condition(
+                    'word_order'):  # spider.name == 'word_order'
+                self.chrome.get(request.url)
+                self.click('admin', 'admin')
+                self.pick_code()
+                time.sleep(3)
+                self.detect()
+                return HtmlResponse(url=self.chrome.current_url)

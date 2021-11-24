@@ -8,7 +8,7 @@ USER_AGENT = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 
 DOWNLOADER_MIDDLEWARES = {
     'team_project.middlewares.RandomProxyMiddleware': 543,
-    'team_project.middlewares.SeleniumForSlideMiddleware': 643,
+    'team_project.middlewares.SeleniumMiddleware': 643,
 }
 
 ROBOTSTXT_OBEY = False
