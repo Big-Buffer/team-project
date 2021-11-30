@@ -23,6 +23,7 @@ from .chaojiying import Chaojiying
 
 pic_id = ''
 
+
 class TeamProjectSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
@@ -359,6 +360,57 @@ class SeleniumMiddleware(object):
         track = self.get_track(left)  # 计算滑动轨迹
         self.move_to_gap(slide_btn, track)  # 移动
 
+    def detect_slide(self):
+        if self.chrome.current_url == "https://captcha1.scrape.center/success":
+            print("success")
+        else:
+            time.sleep(1)
+            fresh = self.chrome.find_element(By.CSS_SELECTOR, "a.geetest_refresh_1")
+            fresh.click()
+            self.chrome.find_element(By.CSS_SELECTOR, "canvas.geetest_canvas_slice").click()
+            time.sleep(5)
+            self.run()
+            self.detect_slide()
+
+    def get_code(self, code_img):
+        position = self.get_position(code_img)  # 获取验证图片位置
+        screenshot = self.get_screenshot()  # 获取浏览器截图
+        position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
+        code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale)  # 得到验证码图片
+        # 灰度处理
+        im = code_img_final.convert('L')
+        # 设置二值化的阈值
+        threshold = 170
+        t = []
+        for i in range(256):
+            if i < threshold:
+                t.append(0)
+            else:
+                t.append(1)
+        # 通过表格转换成二进制图片，1的作用是白色，0就是黑色
+        im = im.point(t, "1")
+        return pytesseract.image_to_string(im).replace(' ', '')
+
+    def input_code(self, code_img, code_input):
+        code = self.get_code(code_img)
+        code_input.clear()
+        time.sleep(1)
+        code_input.send_keys(code)
+        time.sleep(1)
+        btn = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
+            (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][4]/div/button')))  # 根据具体情况改
+        btn.click()
+        windows = self.chrome.window_handles
+        self.chrome.switch_to.window(windows[-1])
+
+    def detect_image(self, code_img, code_input):
+        if self.chrome.current_url == "https://captcha7.scrape.center/success":
+            print('success')
+        else:
+            code_img.click()
+            self.input_code(code_img, code_input)
+            self.detect_image(code_img, code_input)
+
     def pick_code(self):
         global pic_id
         time.sleep(5)
@@ -388,15 +440,14 @@ class SeleniumMiddleware(object):
             certern_btn.click()
 
     # 检测是否登陆成功
-
-    def detect(self):
+    def detect_word(self):
         current = self.chrome.current_url
         if current == 'https://captcha3.scrape.center/success':
             print('登陆成功')
         else:
             self.chaojiying.ReportError(pic_id)
             self.pick_code()
-            self.detect()
+            self.detect_word()
 
     # request the website
     def process_request(self, request, spider):
@@ -407,18 +458,7 @@ class SeleniumMiddleware(object):
             self.chrome.get(request.url)
             self.click('admin', 'admin')
             time.sleep(2)
-            self.run()
-            time.sleep(1)
-            windows = self.chrome.window_handles
-            self.chrome.switch_to.window(windows[-1])
-            try:
-                success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
-                if success.text == "登录成功":
-                    print('success')
-                else:
-                    print('fail')
-            except:
-                print('error')
+            self.detect_slide()
             html = self.chrome.page_source
             return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
@@ -430,39 +470,11 @@ class SeleniumMiddleware(object):
             code_input = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
                 (By.XPATH,
                  '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][3]/div/div/div/div/input')))  # 根据具体情况改
+
             code_img = self.chrome.find_element(By.ID, 'captcha')
-            position = self.get_position(code_img)  # 获取验证图片位置
-            screenshot = self.get_screenshot()  # 获取浏览器截图
-            position_scale = self.get_position_scale(screenshot)  # 对比上两张图算位置
-            code_img_final = self.get_slideimg_screenshot(screenshot, position, position_scale)  # 得到验证码图片
-            # 灰度处理
-            im = code_img_final.convert('L')
-            # 设置二值化的阈值
-            threshold = 170
-            t = []
-            for i in range(256):
-                if i < threshold:
-                    t.append(0)
-                else:
-                    t.append(1)
-            # 通过表格转换成二进制图片，1的作用是白色，0就是黑色
-            im = im.point(t, "1")
-            code = pytesseract.image_to_string(im)
-            code_input.send_keys(code)
-            time.sleep(1)
-            btn = WebDriverWait(self.chrome, 5, 0.5).until(EC.presence_of_element_located(
-                (By.XPATH, '//form[@class=\'el-form\']/div[@class=\'el-form-item\'][4]/div/button')))  # 根据具体情况改
-            btn.click()
-            windows = self.chrome.window_handles
-            self.chrome.switch_to.window(windows[-1])
-            try:
-                success = self.chrome.find_element(By.CSS_SELECTOR, 'h2.text-center')  # 获取显示结果的标签，需修改
-                if success.text == "登录成功":
-                    print('success')
-                else:
-                    print('fail')
-            except:
-                print('error')
+
+            self.detect_image(code_img, code_input)
+
             html = self.chrome.page_source
             return HtmlResponse(url=self.chrome.current_url, body=html.encode('utf-8'))
 
@@ -473,5 +485,5 @@ class SeleniumMiddleware(object):
             self.click('admin', 'admin')
             self.pick_code()
             time.sleep(3)
-            self.detect()
+            self.detect_word()
             return HtmlResponse(url=self.chrome.current_url)

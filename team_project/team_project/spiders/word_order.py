@@ -112,7 +112,7 @@ from scrapy_redis.spiders import RedisSpider
 class SlideSpider(RedisSpider):
     name = 'word_order'
     # start_urls = [
-    #     'https://captcha1.scrape.center/'
+    #     'https://captcha3.scrape.center/'
     # ]
     redis_key = "order:start_urls"
 
