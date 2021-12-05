@@ -18,3 +18,7 @@ class TestSpider(RedisSpider):
 
             item = TeamProjectItem(author=author)
             yield item
+
+    custom_settings = {
+        'team_project.pipelines.TeamProjectPipeline': 300,
+    }

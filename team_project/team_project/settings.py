@@ -13,7 +13,7 @@ DOWNLOADER_MIDDLEWARES = {
 
 ROBOTSTXT_OBEY = False
 
-ITEM_PIPELINES = {'team_project.pipelines.TeamProjectPipeline': 100,
+ITEM_PIPELINES = {
                   'scrapy_redis.pipelines.RedisPipeline': 400
                   }
 
