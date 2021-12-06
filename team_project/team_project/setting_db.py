@@ -5,12 +5,9 @@ from pymongo.errors import DuplicateKeyError
 class MongoDB(object):
 
     def __init__(self):
-        # 连接mongodb服务器,先启动mongodb服务器和客户端
         self.client = pymongo.MongoClient(host="localhost", port=27017)
-        # 连接ProxiesPool数据库，可以先在mongodb中创建ProxiesPool数据库，集合插入数据时会自动创建
         # TODO 更改相应的db
         self.db = self.client['myDB']
-        # 连接ProxiesPool数据库下的proxies集合
         self.domain = self.db['domain']
         self.domain.create_index('domain', unique=True)
 
