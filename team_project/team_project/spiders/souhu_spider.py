@@ -3,11 +3,11 @@ from ..items import SouhuItem
 from scrapy_redis.spiders import RedisSpider
 
 
-class souhu_spider(scrapy.Spider):
+class souhu_spider(RedisSpider):
     name = 'souhu_spider'
     # url = 'https://news.sohu.com/'
-    # redis_key = "souhu:"
-    start_urls = ['https://news.sohu.com/']
+    redis_key = "souhu:"
+    # start_urls = ['https://news.sohu.com/']
 
     def parse(self, response, **kwargs):
         selector = scrapy.Selector(response)
