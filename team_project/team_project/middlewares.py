@@ -487,3 +487,31 @@ class SeleniumMiddleware(object):
             time.sleep(3)
             self.detect_word()
             return HtmlResponse(url=self.chrome.current_url)
+
+
+class SouhuSeleniumMiddleware(object):
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        # This method is used by Scrapy to create your spiders.
+        s = cls()
+        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(s.spider_opened, signal=signals.spider_closed)
+        return s
+
+    def spider_opened(self, spider):
+        # when the spider created
+        self.chrome = webdriver.Chrome()
+
+    def spider_closed(self, spider):
+        self.chrome.quit()
+
+    # request the website
+    def process_request(self, request, spider):
+        if request.url != 'https://news.sohu.com/':
+            time.sleep(2)
+            self.chrome.get(request.url)
+            WebDriverWait(self.chrome, 30, 1).until(
+                EC.presence_of_element_located((By.XPATH, '//span[@class="read-num"]/em')))
+            return HtmlResponse(url=request.url, body=self.chrome.page_source, request=request, encoding='utf-8',
+                            status=200)

@@ -32,5 +32,20 @@ class RmrbPipeline:
     def close_spider(self, spider):
         self.f.close()
 
+
+class SouhuPipeline:
+    def open_spider(self, spider):
+        self.f = open('data/souhu.csv', 'w', encoding='utf-8', newline='')
+
+    def process_item(self, item, spider):
+        writer = csv.DictWriter(self.f, ['title', 'content', 'reading'])
+        writer.writeheader()
+        writer.writerow(dict(item))
+        return item
+
+    def close_spider(self, spider):
+        self.f.close()
+
+
 if __name__ == '__main__':
     open('data/rmrb.csv', 'w', encoding='utf-8', newline='')

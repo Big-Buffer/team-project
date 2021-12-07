@@ -6,10 +6,11 @@ class TeamProjectItem(scrapy.Item):
 
 
 class RmrbItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
     title = scrapy.Field()
     author = scrapy.Field()
-    pass
 
 
+class SouhuItem(scrapy.Item):
+    title = scrapy.Field()
+    content = scrapy.Field()
+    reading = scrapy.Field()
