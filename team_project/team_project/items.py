@@ -14,3 +14,8 @@ class SouhuItem(scrapy.Item):
     title = scrapy.Field()
     content = scrapy.Field()
     reading = scrapy.Field()
+
+
+class SinaItem(scrapy.Item):
+    head = scrapy.Field()
+    content = scrapy.Field()
