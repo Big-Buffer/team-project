@@ -3,7 +3,6 @@ import csv
 
 import requests
 
-
 class TeamProjectPipeline:
 
     def __init__(self):
@@ -83,7 +82,7 @@ class TestPipeline:
 
     def process_item(self, item, spider):
         # data = json.dumps(dict(item), ensure_ascii=False)
-        d = json.dumps(dict(item), ensure_ascii=False).encode('utf-8').__str__()
+        d = str(item)
         print('我们的item=======>')
         print(d)
         print('<=======')
