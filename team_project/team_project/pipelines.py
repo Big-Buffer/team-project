@@ -1,6 +1,8 @@
 import json
 import csv
 
+import requests
+
 
 class TeamProjectPipeline:
 
@@ -73,6 +75,28 @@ class NewsPipeline:
 
     def close_spider(self, spider):
         self.f.close()
+
+
+class TestPipeline:
+    def open_spider(self, spider):
+        pass
+
+    def process_item(self, item, spider):
+        # data = json.dumps(dict(item), ensure_ascii=False)
+        d = json.dumps(dict(item), ensure_ascii=False).encode('utf-8').__str__()
+        print('我们的item=======>')
+        print(d)
+        print('<=======')
+        data = {'searchValue': '1', 'createBy': 'chen', 'data': d, 'remark': '无'}
+        res = requests.post(url="http://47.98.127.15:8089/pyData/add", json=data, headers={'Content-Type': 'application/json'})
+        print('返回结果================>')
+        print(res.text)
+        print("<==================")
+        return item
+
+    def close_spider(self, spider):
+        pass
+
 
 if __name__ == '__main__':
     open('data/rmrb.csv', 'w', encoding='utf-8', newline='')

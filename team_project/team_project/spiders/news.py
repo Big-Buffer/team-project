@@ -5,15 +5,15 @@ from ..items import NewsItem
 import scrapy
 
 
-class NewsSpider(RedisSpider):
+class NewsSpider(scrapy.Spider):
     name = 'news'
     # start_urls = ['http://paper.people.com.cn/']
     # start_urls = ['https://news.sohu.com/']
-    # start_urls = ['https://news.sina.com.cn/china/']
+    start_urls = ['https://news.sina.com.cn/china/']
     redis_key = "news:"
     custom_settings = {
         'ITEM_PIPELINES': {
-            'team_project.pipelines.NewsPipeline': 300},
+            'team_project.pipelines.TestPipeline': 500},
     }
 
     def parse(self, response, **kwargs):
@@ -67,9 +67,12 @@ class NewsSpider(RedisSpider):
 
     def sina_parse(self, response):
         item = NewsItem()
+        title = ""
         content = ""
-        title = response.xpath('//h1[@class="main-title"]/text()').extract()
+        title_list = response.xpath('//h1[@class="main-title"]/text()').extract()
         content_list = response.xpath('//div[@id="article"]/p/text()').extract()
+        for title_one in title_list:
+            title += title_one
         for content_one in content_list:
             content += content_one
         if title == '' or content == '':

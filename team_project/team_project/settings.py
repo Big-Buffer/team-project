@@ -14,16 +14,19 @@ DOWNLOADER_MIDDLEWARES = {
 
 ROBOTSTXT_OBEY = False
 
-ITEM_PIPELINES = {
-                  'scrapy_redis.pipelines.RedisPipeline': 400
-                  }
-
-# 使用scrapy-redis组件去重队列
-DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
-# 使用scrapy-redis自己的调度器
-SCHEDULER = "scrapy_redis.scheduler.Scheduler"
-# 是否允许暂停
-SCHEDULER_PERSIST = True
-
-REDIS_HOST = "139.196.110.245"
-REDIS_PORT = 6379
+# ITEM_PIPELINES = {
+#     'scrapy_redis.pipelines.RedisPipeline': 400
+# }
+#
+# # 使用scrapy-redis组件去重队列
+# DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+# # 使用scrapy-redis自己的调度器
+# SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+# # 是否允许暂停
+# SCHEDULER_PERSIST = True
+#
+# REDIS_HOST = "139.196.110.245"
+# REDIS_PORT = 6379
+# REDIS_PARAMS = {
+#     'password': '1234qw'
+# }
