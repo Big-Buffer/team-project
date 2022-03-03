@@ -1,22 +1,28 @@
+import logging
 from urllib.parse import urlparse
 
 from scrapy_redis.spiders import RedisSpider
 from ..items import NewsItem
 import scrapy
+from ..log import Log
 
 
-class NewsSpider(scrapy.Spider):
+class NewsSpider(RedisSpider):
     name = 'news'
     # start_urls = ['http://paper.people.com.cn/']
     # start_urls = ['https://news.sohu.com/']
-    start_urls = ['https://news.sina.com.cn/china/']
+    # start_urls = ['https://news.sina.com.cn/china/']
     redis_key = "news:"
     custom_settings = {
         'ITEM_PIPELINES': {
-            'team_project.pipelines.TestPipeline': 500},
+            'team_project.pipelines.NewsPipeline': 500},
     }
+    logger = logging.getLogger('stat')
+    def __init__(self):
+        self.s = Log()
 
     def parse(self, response, **kwargs):
+        self.s.start_time()
         if urlparse(response.url).netloc == "paper.people.com.cn":
             pass
             title_list = response.xpath('//div[@class="news"]/ul/li')
@@ -51,6 +57,7 @@ class NewsSpider(scrapy.Spider):
             for href in hrefs:
                 # print(href.get())
                 yield scrapy.Request(url=response.urljoin(href), callback=self.souhu_parse)
+        self.s.end_time()
 
     def rmrb_parse(self, response):
         item = response.meta['item']

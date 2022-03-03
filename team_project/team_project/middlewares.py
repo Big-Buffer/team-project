@@ -207,8 +207,8 @@ class SeleniumMiddleware(object):
     def get_position_scale(self, screen_shot):
         height = self.chrome.execute_script('return document.documentElement.clientHeight')
         width = self.chrome.execute_script('return document.documentElement.clientWidth')
-        x_scale = screen_shot.size[0] / (width + 10)
-        y_scale = screen_shot.size[1] / (height)
+        x_scale = screen_shot.size[0] / width
+        y_scale = screen_shot.size[1] / height
         return (x_scale, y_scale)
 
     # 获取有缺口的滑动图片
@@ -367,7 +367,7 @@ class SeleniumMiddleware(object):
             time.sleep(1)
             fresh = self.chrome.find_element(By.CSS_SELECTOR, "a.geetest_refresh_1")
             fresh.click()
-            self.chrome.find_element(By.CSS_SELECTOR, "canvas.geetest_canvas_slice").click()
+            self.chrome.find_element(By.CSS_SELECTOR, "canvas.geetest_canvas_slice")
             time.sleep(5)
             self.run()
             self.detect_slide()

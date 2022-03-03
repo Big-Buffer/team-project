@@ -3,6 +3,7 @@ import csv
 
 import requests
 
+
 class TeamProjectPipeline:
 
     def __init__(self):
@@ -63,8 +64,11 @@ class SinaPipeline:
 
 
 class NewsPipeline:
+    def __init__(self):
+        self.f = open('./data/news.csv', 'w', encoding='utf-8', newline='')
+
     def open_spider(self, spider):
-        self.f = open('data/news.csv', 'w', encoding='utf-8', newline='')
+        pass
 
     def process_item(self, item, spider):
         writer = csv.DictWriter(self.f, ['title', 'content'])
@@ -83,11 +87,12 @@ class TestPipeline:
     def process_item(self, item, spider):
         # data = json.dumps(dict(item), ensure_ascii=False)
         d = str(item)
-        print('我们的item=======>')
-        print(d)
-        print('<=======')
-        data = {'searchValue': '1', 'createBy': 'chen', 'data': d, 'remark': '无'}
-        res = requests.post(url="http://47.98.127.15:8089/pyData/add", json=data, headers={'Content-Type': 'application/json'})
+        # print('我们的item=======>')
+        # print(d)
+        # print('<=======')
+        data = {'searchValue': item['title'], 'createBy': 'chen', 'data': d, 'remark': '无'}
+        res = requests.post(url="http://47.98.127.15:8089/pyData/add", json=data,
+                            headers={'Content-Type': 'application/json'})
         print('返回结果================>')
         print(res.text)
         print("<==================")
@@ -98,4 +103,7 @@ class TestPipeline:
 
 
 if __name__ == '__main__':
-    open('data/rmrb.csv', 'w', encoding='utf-8', newline='')
+    f = open('./data/news.csv', 'w', encoding='utf-8', newline='')
+    writer = csv.DictWriter(f, ['title', 'content'])
+    writer.writeheader()
+    writer.writerow({'title': 'ww', 'content': 'sa'})
