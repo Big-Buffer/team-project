@@ -24,3 +24,8 @@ class SouhuItem(scrapy.Item):
 class SinaItem(scrapy.Item):
     head = scrapy.Field()
     content = scrapy.Field()
+
+
+class HongLouItem(scrapy.Item):
+    title = scrapy.Field()
+    content = scrapy.Field()

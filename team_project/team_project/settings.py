@@ -9,7 +9,7 @@ USER_AGENT = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 DOWNLOADER_MIDDLEWARES = {
     'team_project.middlewares.RandomProxyMiddleware': 543,
     # TODO:暂时去掉
-    'team_project.middlewares.SeleniumMiddleware': 643,
+    # 'team_project.middlewares.SeleniumMiddleware': 643,
 }
 
 ROBOTSTXT_OBEY = False
@@ -31,4 +31,4 @@ REDIS_PARAMS = {
     'password': '1234qw'
 }
 
-LOG_FILE = "./log.log"
+# LOG_FILE = "./log.log"

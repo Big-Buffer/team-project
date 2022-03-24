@@ -1,5 +1,6 @@
 import json
 import csv
+import os
 
 import requests
 
@@ -65,7 +66,30 @@ class SinaPipeline:
 
 class NewsPipeline:
     def __init__(self):
-        self.f = open('./data/news.csv', 'w', encoding='utf-8', newline='')
+        path = './data/'
+        if not os.path.exists(path):
+            os.mkdir(path)
+        self.f = open(path + 'news.csv', 'w', encoding='utf-8', newline='')
+
+    def open_spider(self, spider):
+        pass
+
+    def process_item(self, item, spider):
+        writer = csv.DictWriter(self.f, ['title', 'content'])
+        writer.writeheader()
+        writer.writerow(dict(item))
+        return item
+
+    def close_spider(self, spider):
+        self.f.close()
+
+
+class HongLouPipeline:
+    def __init__(self):
+        path = './data/'
+        if not os.path.exists(path):
+            os.mkdir(path)
+        self.f = open(path + 'hongLou.csv', 'w', encoding='utf-8', newline='')
 
     def open_spider(self, spider):
         pass

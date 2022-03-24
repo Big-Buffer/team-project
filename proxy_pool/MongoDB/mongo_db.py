@@ -2,7 +2,7 @@ import pymongo
 from pymongo.errors import DuplicateKeyError
 
 
-class MongoDB():
+class MongoDB:
 
     def __init__(self):
         # 连接mongodb服务器,先启动mongodb服务器和客户端
@@ -17,19 +17,19 @@ class MongoDB():
     # 插入数据
     def insert(self, proxy):
         try:
-            self.proxies.insert(proxy)
+            self.proxies.insert_one(proxy)
             print("插入成功:{}".format(proxy))
         except DuplicateKeyError:
             pass
 
     # 删除数据
     def delete(self, conditions):
-        self.proxies.remove(conditions)
+        self.proxies.find_one_and_delete(conditions)
         print("删除成功:{}".format(conditions))
 
     # 更新数据
     def update(self, conditions, values):
-        self.proxies.update(conditions, {"$set": values})
+        self.proxies.update_one(conditions, {"$set": values})
         print("更新成功:{},{}".format(conditions, values))
 
     # 取出所有的数据，count是check_crawl_ip获取到的ip代理数量
@@ -54,7 +54,10 @@ class MongoDB():
 
     # 统计数据库中代理个数
     def get_count(self):
-        return self.proxies.count({})  # {}条件为空，即统计全部数据
+        count = 0
+        for i in self.proxies.find({}):
+            count += 1
+        return count  # {}条件为空，即统计全部数据
 
     def get_all(self):
         proxy_list = []
@@ -65,4 +68,4 @@ class MongoDB():
 
 if __name__ == '__main__':
     mongodb = MongoDB()
-    print(mongodb.get_http())
+    print(mongodb.get_count())
